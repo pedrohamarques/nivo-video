@@ -1,7 +1,7 @@
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown } from "lucide-react";
 
-import nivoLogo from '../assets/logo-nivo.svg'
-import { Badge } from './ui/badge'
+import nivoLogo from "../assets/logo-nivo.svg";
+import { Badge } from "./ui/badge";
 
 export function Header() {
   return (
@@ -79,5 +79,5 @@ export function Header() {
         <ChevronDown className="size-4 text-zinc-600" />
       </div>
     </div>
-  )
+  );
 }
