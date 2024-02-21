@@ -1,4 +1,4 @@
-import { FileDown, MoreHorizontal, Plus, Search } from "lucide-react";
+import { FileDown, Filter, MoreHorizontal, Plus, Search } from "lucide-react";
 import { Header } from "./components/header";
 import { Tabs } from "./components/tabs";
 import { Button } from "./components/ui/button";
@@ -15,6 +15,8 @@ import {
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
+import { useState } from "react";
+import useDebounceValue from "./hooks/use-debounce-value";
 
 export type TagResponse = {
   first: number;
@@ -33,15 +35,20 @@ type Tag = {
 };
 
 export function App() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlFilter = searchParams.get("filter") ?? "";
+
+  const [filter, setFilter] = useState(urlFilter);
+
+  const debouncedFilter = useDebounceValue(filter, 1000);
 
   const page = searchParams.get("page") ? Number(searchParams.get("page")) : 1;
 
   const { data: tagsResponse, isLoading } = useQuery<TagResponse>({
-    queryKey: ["get-tags", page],
+    queryKey: ["get-tags", debouncedFilter, page],
     queryFn: async () => {
       const response = await fetch(
-        `http://localhost:3333/tags?_page=${page}&_per_page=10`,
+        `http://localhost:3333/tags?_page=${page}&_per_page=10&title=${urlFilter}`,
       );
       const data = await response.json();
 
@@ -52,6 +59,23 @@ export function App() {
     },
     placeholderData: keepPreviousData,
   });
+
+  function handleFilter() {
+    setSearchParams((params) => {
+      params.set("page", "1 ");
+      params.set("filter", filter);
+
+      return params;
+    });
+  }
+
+  // useEffect(() => {
+  //   setSearchParams(params => {
+  //     params.set('page', '1');
+
+  //     return params;
+  //   } )
+  // }, [debouncedFilter, setSearchParams])
 
   if (isLoading) {
     return null;
@@ -76,10 +100,20 @@ export function App() {
         </div>
 
         <div className="flex items-center justify-between">
-          <Input variant="filter">
-            <Search className="size-3" />
-            <Control placeholder="Search tags..." />
-          </Input>
+          <div className="flex items-center gap-2">
+            <Input variant="filter">
+              <Search className="size-3" />
+              <Control
+                placeholder="Search tags..."
+                onChange={(event) => setFilter(event.target.value)}
+                value={filter}
+              />
+            </Input>
+            <Button onClick={handleFilter}>
+              <Filter className="size-3" />
+              Filter
+            </Button>
+          </div>
 
           <Button>
             <FileDown className="size-3" />
