@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "./ui/button";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import * as Dialog from "@radix-ui/react-dialog";
 
@@ -13,6 +14,7 @@ const createTagSchema = z.object({
 type CreateTagSchemaProps = z.infer<typeof createTagSchema>;
 
 export function CreateTagForm() {
+  const queryClient = useQueryClient();
   const { register, handleSubmit, watch, formState } =
     useForm<CreateTagSchemaProps>({
       resolver: zodResolver(createTagSchema),
@@ -29,17 +31,28 @@ export function CreateTagForm() {
       .replace(/\s+/g, "-");
   }
 
+  const { mutateAsync } = useMutation({
+    mutationFn: async ({ title }: CreateTagSchemaProps) => {
+      // delay 2s
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await fetch("http://localhost:3333/tags", {
+        method: "POST",
+        body: JSON.stringify({
+          title,
+          slug,
+          amountOfVideos: 0,
+        }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["get-tags"],
+      });
+    },
+  });
+
   async function createTag({ title }: CreateTagSchemaProps) {
-    // delay 2s
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    await fetch("http://localhost:3333/tags", {
-      method: "POST",
-      body: JSON.stringify({
-        title,
-        slug,
-        amountOfVideos: 0,
-      }),
-    });
+    await mutateAsync({ title });
   }
 
   return (
